@@ -13,6 +13,7 @@ public struct TimerHistoryView: View {
   @Bindable var timer: TimerModel
   @State private var isEditingTitle = false
   @State private var newTitle = ""
+  @State private var showingTimerRunView = false
   
   public init(timer: TimerModel) {
     self.timer = timer
@@ -41,7 +42,7 @@ public struct TimerHistoryView: View {
     .navigationTitle(timer.title)
     .toolbar {
       ToolbarItem(placement: .automatic) {
-        NavigationLink(destination: TimerRunView(timer: timer)) {
+        Button(action: { showingTimerRunView = true }) {
           Label("開始新計時", systemImage: "timer")
             .foregroundColor(.green)
         }
@@ -55,6 +56,16 @@ public struct TimerHistoryView: View {
         }
       }
     }
+    #if os(iOS)
+    .fullScreenCover(isPresented: $showingTimerRunView) {
+      TimerRunView(timer: timer)
+    }
+    #else
+    .sheet(isPresented: $showingTimerRunView) {
+      TimerRunView(timer: timer)
+    }
+    #endif
+    
     .alert("編輯計時器名稱", isPresented: $isEditingTitle) {
       TextField("計時器名稱", text: $newTitle)
       Button("取消", role: .cancel) {}

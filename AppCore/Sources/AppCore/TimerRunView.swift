@@ -10,6 +10,7 @@ import SwiftData
 
 public struct TimerRunView: View {
   @Environment(\.modelContext) private var modelContext
+  @Environment(\.dismiss) private var dismiss
   @Bindable var timer: TimerModel
   @State private var timeElapsed: TimeInterval = 0
   @State private var timerObject: Timer?
@@ -35,40 +36,17 @@ public struct TimerRunView: View {
         .foregroundColor(isRunning ? .green : .primary)
         .padding()
       
-      // 控制按鈕
-      HStack(spacing: 30) {
-        // 重置按鈕
-        Button(action: resetTimer) {
-          Image(systemName: "arrow.counterclockwise")
+      // 開始/停止按鈕
+      Button(action: toggleTimer) {
+        ZStack {
+          Circle()
+            .fill(isRunning ? Color.red : Color.green)
+            .frame(width: 320, height: 320)
+          
+          Image(systemName: isRunning ? "pause.fill" : "play.fill")
             .font(.title)
-            .foregroundColor(.blue)
-            .padding()
-            .background(Circle().stroke(Color.blue, lineWidth: 2))
+            .foregroundColor(.white)
         }
-        .disabled(timeElapsed == 0 || isRunning)
-        
-        // 開始/停止按鈕
-        Button(action: toggleTimer) {
-          ZStack {
-            Circle()
-              .fill(isRunning ? Color.red : Color.green)
-              .frame(width: 80, height: 80)
-            
-            Image(systemName: isRunning ? "pause.fill" : "play.fill")
-              .font(.title)
-              .foregroundColor(.white)
-          }
-        }
-        
-        // 儲存按鈕
-        Button(action: saveRecord) {
-          Image(systemName: "checkmark")
-            .font(.title)
-            .foregroundColor(.green)
-            .padding()
-            .background(Circle().stroke(Color.green, lineWidth: 2))
-        }
-        .disabled(timeElapsed == 0 || isRunning)
       }
       .padding(.top, 30)
       
@@ -78,14 +56,23 @@ public struct TimerRunView: View {
     #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
     #endif
+    .toolbar {
+      ToolbarItem(placement: .cancellationAction) {
+        Button("取消") {
+          dismiss()
+        }
+      }
+    }
     .onDisappear {
-      stopTimer()
+      if isRunning {
+        stopTimerAndSave()
+      }
     }
   }
   
   private func toggleTimer() {
     if isRunning {
-      stopTimer()
+      stopTimerAndSave()
     } else {
       startTimer()
     }
@@ -106,16 +93,14 @@ public struct TimerRunView: View {
     }
   }
   
-  private func stopTimer() {
+  private func stopTimerAndSave() {
     isRunning = false
     timerObject?.invalidate()
     timerObject = nil
-  }
-  
-  private func resetTimer() {
-    stopTimer()
-    timeElapsed = 0
-    startTime = nil
+    
+    // 保存記錄並返回
+    saveRecord()
+    dismiss()
   }
   
   private func saveRecord() {
@@ -123,8 +108,6 @@ public struct TimerRunView: View {
     
     let record = TimerRecord(duration: timeElapsed, timer: timer)
     timer.records.insert(record, at: 0)
-    
-    resetTimer()
   }
   
   private func formatTimeInterval(_ interval: TimeInterval) -> String {
