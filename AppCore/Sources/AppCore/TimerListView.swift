@@ -11,6 +11,9 @@ import SwiftData
 public struct TimerListView: View {
   @Environment(\.modelContext) private var modelContext
   @Query private var timers: [TimerModel]
+  @State private var isAddingNewTimer = false
+  @State private var newTimerTitle = ""
+  @State private var newlyCreatedTimer: TimerModel?
   
   public init() {}
   
@@ -43,17 +46,32 @@ public struct TimerListView: View {
       .navigationTitle("計時器列表")
       .toolbar {
         ToolbarItem(placement: .automatic) {
-          Button(action: addTimer) {
+          Button(action: { isAddingNewTimer = true }) {
             Label("新增計時器", systemImage: "plus")
           }
         }
+      }
+      .alert("新增計時器", isPresented: $isAddingNewTimer) {
+        TextField("計時器名稱", text: $newTimerTitle)
+        Button("取消", role: .cancel) {
+          newTimerTitle = ""
+        }
+        Button("建立") {
+          addTimer()
+        }
+      }
+      .navigationDestination(item: $newlyCreatedTimer) { timer in
+        TimerHistoryView(timer: timer)
       }
     }
   }
   
   private func addTimer() {
-    let timer = TimerModel(title: "新計時器 \(timers.count + 1)")
+    let title = newTimerTitle.isEmpty ? "新計時器 \(timers.count + 1)" : newTimerTitle
+    let timer = TimerModel(title: title)
     modelContext.insert(timer)
+    newTimerTitle = ""
+    newlyCreatedTimer = timer
   }
   
   private func deleteTimers(offsets: IndexSet) {
