@@ -22,21 +22,28 @@ public struct TimerHistoryView: View {
   public var body: some View {
     VStack {
       List {
-        ForEach(timer.records) { record in
-          HStack {
-            VStack(alignment: .leading) {
-              Text(String(format: "%.1f秒", record.duration))
-                .font(.body)
-              Text(record.timestamp, style: .date)
-                .font(.caption)
+        Section("設置") {
+          Toggle("啟用倒數計時", isOn: $timer.enableCountdown)
+            .tint(.green)
+        }
+        
+        Section("歷史記錄") {
+          ForEach(timer.records) { record in
+            HStack {
+              VStack(alignment: .leading) {
+                Text(String(format: "%.1f秒", record.duration))
+                  .font(.body)
+                Text(record.timestamp, style: .date)
+                  .font(.caption)
+                  .foregroundColor(.gray)
+              }
+              Spacer()
+              Text(record.timestamp, style: .time)
                 .foregroundColor(.gray)
             }
-            Spacer()
-            Text(record.timestamp, style: .time)
-              .foregroundColor(.gray)
           }
+          .onDelete(perform: deleteRecords)
         }
-        .onDelete(perform: deleteRecords)
       }
     }
     .navigationTitle(timer.title)

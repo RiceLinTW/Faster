@@ -13,6 +13,7 @@ public final class TimerModel {
   public var title: String
   public var createdAt: Date
   public var records: [TimerRecord] = []
+  public var enableCountdown: Bool = true
   
   public init(title: String, createdAt: Date = Date()) {
     self.title = title

@@ -5,8 +5,8 @@
 //  Created by Rice Lin on 3/30/25.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 public struct TimerRunView: View {
   @Environment(\.modelContext) private var modelContext
@@ -16,56 +16,90 @@ public struct TimerRunView: View {
   @State private var timerObject: Timer?
   @State private var isRunning = false
   @State private var startTime: Date?
+  @State private var countdownValue = 3
+  @State private var isCountingDown = false
+  @State private var countdownScale: CGFloat = 1.0
+  @State private var countdownOpacity: Double = 1.0
   
   public init(timer: TimerModel) {
     self.timer = timer
   }
   
   public var body: some View {
-    VStack {
-      Spacer()
-      
-      // 標題
-      Text(timer.title)
-        .font(.headline)
-        .padding(.bottom)
-      
-      // 計時器顯示
-      Text(formatTimeInterval(timeElapsed))
-        .font(.system(size: 70, weight: .bold, design: .monospaced))
-        .foregroundColor(isRunning ? .green : .primary)
-        .padding()
-      
-      // 開始/停止按鈕
-      Button(action: toggleTimer) {
-        ZStack {
-          Circle()
-            .fill(isRunning ? Color.red : Color.green)
-            .frame(width: 320, height: 320)
-          
-          Image(systemName: isRunning ? "pause.fill" : "play.fill")
-            .font(.title)
-            .foregroundColor(.white)
+    ZStack {
+      VStack {
+        Spacer()
+        
+        // 標題
+        Text(timer.title)
+          .font(.headline)
+          .padding(.bottom)
+        
+        // 計時器顯示
+        Text(formatTimeInterval(timeElapsed))
+          .font(.system(size: 70, weight: .bold, design: .monospaced))
+          .foregroundColor(isRunning ? .green : .primary)
+          .padding()
+        
+        // 開始/停止按鈕
+        Button(action: toggleTimer) {
+          ZStack {
+            Circle()
+              .fill(isRunning || isCountingDown ? Color.red : Color.green)
+              .frame(width: 320, height: 320)
+            
+            Image(systemName: isRunning || isCountingDown ? "pause.fill" : "play.fill")
+              .font(.title)
+              .foregroundColor(.white)
+          }
         }
+        .padding(.top, 30)
+        
+        // 倒數計時開關
+        Toggle("啟用倒數計時", isOn: $timer.enableCountdown)
+          .padding(.top, 20)
+          .padding(.horizontal, 40)
+        
+        Spacer()
       }
-      .padding(.top, 30)
-      
-      Spacer()
-    }
-    .navigationTitle("計時")
-    #if os(iOS)
-    .navigationBarTitleDisplayMode(.inline)
-    #endif
-    .toolbar {
-      ToolbarItem(placement: .cancellationAction) {
-        Button("取消") {
-          dismiss()
+      .navigationTitle("計時")
+      #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+      #endif
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("取消") {
+              dismiss()
+            }
+          }
         }
+      
+      // 倒數計時覆蓋效果
+      if isCountingDown {
+        Color.black.opacity(0.7)
+          .edgesIgnoringSafeArea(.all)
+          .allowsHitTesting(false)
+        
+        VStack {
+          Text(countdownValue > 0 ? "\(countdownValue)" : "開始!")
+            .font(.system(size: 150, weight: .bold, design: .rounded))
+            .foregroundColor(countdownValue > 0 ? .orange : .green)
+            .scaleEffect(countdownScale)
+            .opacity(countdownOpacity)
+          
+          Text("預備...")
+            .font(.system(size: 40, weight: .bold, design: .rounded))
+            .foregroundColor(.white)
+            .padding(.top, 20)
+        }
+        .allowsHitTesting(false)
       }
     }
     .onDisappear {
       if isRunning {
         stopTimerAndSave()
+      } else if isCountingDown {
+        cancelCountdown()
       }
     }
   }
@@ -73,15 +107,95 @@ public struct TimerRunView: View {
   private func toggleTimer() {
     if isRunning {
       stopTimerAndSave()
+    } else if isCountingDown {
+      cancelCountdown()
     } else {
-      startTimer()
+      if timer.enableCountdown {
+        startCountdown()
+      } else {
+        startTimer()
+      }
     }
+  }
+  
+  private func startCountdown() {
+    isCountingDown = true
+    countdownValue = 3
+    animateCountdown()
+  }
+  
+  private func animateCountdown() {
+    // 設定初始狀態
+    countdownScale = 1.0
+    countdownOpacity = 1.0
+    
+    // 第一個數字的動畫
+    withAnimation(.easeOut(duration: 0.8)) {
+      countdownScale = 1.5
+      countdownOpacity = 0.2
+    }
+    
+    // 延遲後開始第二個數字
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+      // 確保還在倒數中
+      guard isCountingDown else { return }
+      
+      countdownValue = 2
+      countdownScale = 1.0
+      countdownOpacity = 1.0
+      
+      withAnimation(.easeOut(duration: 0.8)) {
+        countdownScale = 1.5
+        countdownOpacity = 0.2
+      }
+      
+      // 延遲後開始第三個數字
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        // 確保還在倒數中
+        guard isCountingDown else { return }
+        
+        countdownValue = 1
+        countdownScale = 1.0
+        countdownOpacity = 1.0
+        
+        withAnimation(.easeOut(duration: 0.8)) {
+          countdownScale = 1.5
+          countdownOpacity = 0.2
+        }
+        
+        // 延遲後顯示"開始"
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+          // 確保還在倒數中
+          guard isCountingDown else { return }
+          
+          countdownValue = 0
+          countdownScale = 1.0
+          countdownOpacity = 1.0
+          
+          withAnimation(.easeOut(duration: 0.8)) {
+            countdownScale = 1.5
+            countdownOpacity = 0
+          }
+          
+          // 結束倒數並開始計時
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            guard isCountingDown else { return }
+            cancelCountdown()
+            startTimer()
+          }
+        }
+      }
+    }
+  }
+  
+  private func cancelCountdown() {
+    isCountingDown = false
   }
   
   private func startTimer() {
     isRunning = true
     startTime = Date()
-    let startTimeCapture = startTime  // 捕獲當前值
+    let startTimeCapture = startTime // 捕獲當前值
     
     timerObject = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
       if let capturedStartTime = startTimeCapture {
@@ -122,7 +236,10 @@ public struct TimerRunView: View {
 
 #Preview {
   let preview = TimerModel(title: "預覽計時器")
+  preview.enableCountdown = true
   
-  return TimerRunView(timer: preview)
-    .modelContainer(for: TimerModel.self, inMemory: true)
-} 
+  return NavigationStack {
+    TimerRunView(timer: preview)
+  }
+  .modelContainer(for: TimerModel.self, inMemory: true)
+}
