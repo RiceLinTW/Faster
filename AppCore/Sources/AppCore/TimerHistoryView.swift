@@ -14,6 +14,7 @@ public struct TimerHistoryView: View {
   @State private var isEditingTitle = false
   @State private var newTitle = ""
   @State private var showingTimerRunView = false
+  @State private var showingStatsView = false
   
   public init(timer: TimerModel) {
     self.timer = timer
@@ -26,6 +27,15 @@ public struct TimerHistoryView: View {
           Button(action: { showingTimerRunView = true }) {
             Label("開始新計時", systemImage: "timer")
               .foregroundColor(.green)
+          }
+        }
+        
+        if !timer.records.isEmpty {
+          Section {
+            Button(action: { showingStatsView = true }) {
+              Label("查看統計圖表", systemImage: "chart.line.uptrend.xyaxis")
+                .foregroundColor(.blue)
+            }
           }
         }
         
@@ -83,6 +93,9 @@ public struct TimerHistoryView: View {
       TimerRunView(timer: timer)
     }
     #endif
+    .sheet(isPresented: $showingStatsView) {
+      TimerStatsView(timer: timer)
+    }
     
     .alert("編輯計時器名稱", isPresented: $isEditingTitle) {
       TextField("計時器名稱", text: $newTitle)
