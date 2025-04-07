@@ -21,39 +21,50 @@ public struct TimerHistoryView: View {
   
   public var body: some View {
     VStack {
-      List {
-        Section("設置") {
-          Toggle("啟用倒數計時", isOn: $timer.enableCountdown)
-            .tint(.green)
+      List {        
+        Section {
+          Button(action: { showingTimerRunView = true }) {
+            Label("開始新計時", systemImage: "timer")
+              .foregroundColor(.green)
+          }
         }
         
         Section("歷史記錄") {
-          ForEach(timer.records) { record in
-            HStack {
-              VStack(alignment: .leading) {
-                Text(String(format: "%.1f秒", record.duration))
-                  .font(.body)
-                Text(record.timestamp, style: .date)
-                  .font(.caption)
+          if timer.records.isEmpty {
+            VStack(spacing: 20) {
+              Image(systemName: "timer.circle")
+                .font(.system(size: 60))
+                .foregroundColor(.gray)
+              
+              Text("尚無計時記錄")
+                .font(.headline)
+                .foregroundColor(.gray)              
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 30)
+            .listRowBackground(Color.clear)
+          } else {
+            ForEach(timer.records) { record in
+              HStack {
+                VStack(alignment: .leading) {
+                  Text(String(format: "%.1f秒", record.duration))
+                    .font(.body)
+                  Text(record.timestamp, style: .date)
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                }
+                Spacer()
+                Text(record.timestamp, style: .time)
                   .foregroundColor(.gray)
               }
-              Spacer()
-              Text(record.timestamp, style: .time)
-                .foregroundColor(.gray)
             }
+            .onDelete(perform: deleteRecords)
           }
-          .onDelete(perform: deleteRecords)
         }
       }
     }
     .navigationTitle(timer.title)
     .toolbar {
-      ToolbarItem(placement: .automatic) {
-        Button(action: { showingTimerRunView = true }) {
-          Label("開始新計時", systemImage: "timer")
-            .foregroundColor(.green)
-        }
-      }
       ToolbarItem(placement: .automatic) {
         Button(action: { 
           newTitle = timer.title
