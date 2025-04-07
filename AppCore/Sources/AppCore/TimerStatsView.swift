@@ -220,12 +220,12 @@ public struct TimerStatsView: View {
   
   private var minDuration: Double {
     guard !filteredRecords.isEmpty else { return 0 }
-    return max(0, (filteredRecords.min(by: { $0.duration < $1.duration })?.duration ?? 0) * 0.9)
+    return filteredRecords.min(by: { $0.duration < $1.duration })?.duration ?? 0
   }
   
   private var maxDuration: Double {
-    guard !filteredRecords.isEmpty else { return 100 }
-    return (filteredRecords.max(by: { $0.duration < $1.duration })?.duration ?? 100) * 1.1
+    guard !filteredRecords.isEmpty else { return 0 }
+    return filteredRecords.max(by: { $0.duration < $1.duration })?.duration ?? 0
   }
   
   private var averageDuration: Double {
